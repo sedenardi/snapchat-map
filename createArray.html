@@ -12,16 +12,20 @@
     <br />
     <div>
       <textarea class="form-control" id="inputArea" placeholder="Paste source from http://www.allareacodes.com/area-code-list.htm here" rows="3"></textarea>
-      <button type="button" class="btn btn-success btnConvert">Get Area Codes</button>
+      <button type="button" class="btn btn-success" id="btnParse">Get Area Codes</button>
     </div>
     <br/>
     <div>
-      <pre id="outputArea"></pre>
+      <h5>JSON<span id="lenJSON"></span></h5>
+      <pre id="outputJSONArea" style="height:200px; overflow-y:scroll;"></pre>
+      <br />
+      <h5>SQL<span id="lenSQL"></span></h5>
+      <pre id="outputSQLArea" style="height:200px; overflow-y:scroll;"></pre>
     </div>
   </body>
 </html>
 <script type="text/javascript">
-  $('.btnConvert').click(function() {
+  $('#btnParse').click(function() {
     var rawHtml = $('#inputArea').val();
     var innerTable = $(rawHtml).find('#main_table').find('table:eq(5)').html();
     var json = html2json(innerTable).child;
@@ -31,12 +35,26 @@
       var l1 = json[i].child[1].text.split(': ');
       var l2 = l1.length > 1 ? l1[1].split(', ') : ['None'];
       var o = {
-        area_code: a.substr(a.indexOf('<a>')+3, 3),
+        areacode: a.substr(a.indexOf('<a>')+3, 3),
         state: l1[0],
         cities: l2
       };
       array.push(o);
     }
-    $('#outputArea').html(JSON.stringify(array,null,2));
+
+    var sql = ['Insert into goodAreacodes(areacode,state,city)','Values'];
+    for (var i = 0; i < array.length; i++) {
+      for (var j = 0; j < array[i].cities.length; j++) {
+        sql.push('(\'' + array[i].areacode + '\',\'' + array[i].state + '\',\'' + array[i].cities[j].replace('\'','\\\'') + '\'),');
+      }
+    }
+    var last = sql[sql.length-1];
+    last = last.substr(0,last.length-1) + ';';
+    sql[sql.length-1] = last;
+
+    $('#lenJSON').html(' - ' + array.length);
+    $('#outputJSONArea').html(JSON.stringify(array,null,2));
+    $('#lenSQL').html(' - ' + sql.length);
+    $('#outputSQLArea').html(sql.join('\n'));
   });
 </script>
