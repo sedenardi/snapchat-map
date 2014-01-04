@@ -3,7 +3,7 @@ snapchat-map
 
 Map of area codes contained in the snapchat leak.
 
-Uses 
+Uses: 
 - http://www.snapchatdb.info/ for (censored) data
 - http://www.allareacodes.com/area-code-list.htm for area code city information (as well as Google)
 - https://github.com/Jxck/html2json for html2json
