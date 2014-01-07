@@ -98,7 +98,7 @@
   var getNextCoord = function(i,j) {
     if (i < array.length) {
       if (j < array[i].cities.length) {
-        if (array[i].cities[j] === 'None') {
+        if (array[i].cities[j] === 'None' && !array[i].coords.length) {
           array[i].coords.push({
             city: 'None',
             location: {
