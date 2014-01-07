@@ -24,37 +24,84 @@
     </div>
   </body>
 </html>
+<script type="text/javascript"
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlkjjs85r1PuTInuyKV-LfmGxcEUZ97Lw&sensor=false">
+</script>
 <script type="text/javascript">
+  var geocoder, array;
+  var initialize = function() {
+    geocoder = new google.maps.Geocoder();
+  };
   $('#btnParse').click(function() {
     var rawHtml = $('#inputArea').val();
     var innerTable = $(rawHtml).find('#main_table').find('table:eq(5)').html();
     var json = html2json(innerTable).child;
-    var array = [];
+    array = [];
     for (var i = 1; i < json.length; i++) {
       var a = json[i].child[0].text;
       var l1 = json[i].child[1].text.split(': ');
       var l2 = l1.length > 1 ? l1[1].split(', ') : ['None'];
       var o = {
         areacode: a.substr(a.indexOf('<a>')+3, 3),
-        state: l1[0],
-        cities: l2
+        state: l1[0].replace('<a>','').replace('</a>',''),
+        cities: l2,
+        coords: []
       };
       array.push(o);
     }
 
-    var sql = ['Insert into goodAreacodes(areacode,state,city)','Values'];
+    getNextCoord(0,0);
+  });
+  var getNextCoord = function(i,j) {
+    if (i < array.length) {
+      if (j < array[i].cities.length) {
+        var address = array[i].cities[j] + ', ' + array[i].state;
+        geocoder.geocode( { 'address': address }, function(results, status){
+          if (status === google.maps.GeocoderStatus.OK) {
+            console.log(address + ': ' + results[0].geometry.location);
+            array[i].coords.push({
+              city: array[i].cities[j],
+              location: results[0].geometry.location
+            });
+            getNextCoord(i,j+1);
+          } else {
+            console.log('Throttling');
+            setTimeout(function() {
+              getNextCoord(i,j);
+            }, 2000);
+          }
+        });
+      } else {
+        getNextCoord(i+1,0);
+      }
+    } else {
+      makeSQL();
+    }
+  };
+  var makeSQL = function() {
+    var sql = ['Insert into goodAreacodes(areacode,state,city,long,lat)','Values'];
     for (var i = 0; i < array.length; i++) {
-      for (var j = 0; j < array[i].cities.length; j++) {
-        sql.push('(\'' + array[i].areacode + '\',\'' + array[i].state + '\',\'' + array[i].cities[j].replace('\'','\\\'') + '\'),');
+      for (var j = 0; j < array[i].coords.length; j++) {
+        sql.push('(\'' + array[i].areacode + '\',\'' + array[i].state + '\',\'' + array[i].coords[j].city.replace('\'','\\\'') + '\',\'' + 
+          array[i].coords[j].location[0] + '\',\'' + 
+          array[i].coords[j].location[1] + '\'),');
       }
     }
     var last = sql[sql.length-1];
     last = last.substr(0,last.length-1) + ';';
     sql[sql.length-1] = last;
-
     $('#lenJSON').html(' - ' + array.length);
     $('#outputJSONArea').html(JSON.stringify(array,null,2));
     $('#lenSQL').html(' - ' + sql.length);
     $('#outputSQLArea').html(sql.join('\n'));
-  });
+  };
+  function loadScript() {
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=' + gMapsAPIKey + '&sensor=false&' +
+        'callback=initialize';
+    document.body.appendChild(script);
+  }
+
+  window.onload = loadScript;
 </script>
