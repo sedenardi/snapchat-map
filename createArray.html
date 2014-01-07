@@ -17,15 +17,28 @@
     <br/>
     <div>
       <h5>JSON<span id="lenJSON"></span></h5>
-      <pre id="outputJSONArea" style="height:200px; overflow-y:scroll;"></pre>
+      <textarea class="form-control" id="outputJSONArea" rows="6"></textarea>
+      <button type="button" class="btn btn-success" id="btnFetchCoords">Fetch Coordinates</button>
+      <span id="progress" style="display:none;">Progress: </span>
       <br />
       <h5>SQL<span id="lenSQL"></span></h5>
       <pre id="outputSQLArea" style="height:200px; overflow-y:scroll;"></pre>
     </div>
+    <br/>
+    <div>
+      <h5>Manual Lookup</h5>
+      <div class="input-group">
+        <input type="text" class="form-control" id="inputManual" placeholder="Enter City, State">
+        <span class="input-group-btn">
+          <button class="btn btn-default" type="button" id="btnManual">Go!</button>
+        </span>
+      </div>
+      <pre id="outputManual"></pre>
+    </div>
   </body>
 </html>
 <script type="text/javascript"
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlkjjs85r1PuTInuyKV-LfmGxcEUZ97Lw&sensor=false">
+  src="apiKey.js">
 </script>
 <script type="text/javascript">
   var geocoder, array;
@@ -49,52 +62,98 @@
       };
       array.push(o);
     }
-
-    getNextCoord(0,0);
+    $('#lenJSON').html(' - ' + array.length);
+    $('#outputJSONArea').val(JSON.stringify(array,null,2));
+    $('#btnFetchCoords').show();
+  });
+  $('#btnFetchCoords').click(function() {
+    if (typeof gMapsAPIKey === 'undefined') {
+      alert('Must put Google Maps API key in apiKey.js');
+      return;
+    }
+    if (!$('#outputJSONArea').val().length) {
+      alert('Must input JSON from previous run or get area codes from above website');
+      return;
+    }
+    try {
+      array = JSON.parse($('#outputJSONArea').val());
+      $('#progress').show();
+      getNextCoord(0,0);
+    } catch(e) {
+      alert('JSON is bad');
+    }
   });
   var getNextCoord = function(i,j) {
     if (i < array.length) {
       if (j < array[i].cities.length) {
-        var address = array[i].cities[j] + ', ' + array[i].state;
-        geocoder.geocode( { 'address': address }, function(results, status){
-          if (status === google.maps.GeocoderStatus.OK) {
-            console.log(address + ': ' + results[0].geometry.location);
-            array[i].coords.push({
-              city: array[i].cities[j],
-              location: results[0].geometry.location
-            });
-            getNextCoord(i,j+1);
+        if (array[i].cities[j] === 'None') {
+          array[i].coords.push({
+            city: 'None',
+            location: {
+              nb: 0,
+              ob: 0
+            }
+          });
+          getNextCoord(i+1,0);
+        } else {
+          var address = array[i].cities[j] + ', ' + array[i].state;
+          if (array[i].coords.length - 1 < j) {
+            geocoder.geocode( { 'address': address }, function(results, status){
+              if (status === google.maps.GeocoderStatus.OK) {
+                $('#progress').html('Progress: ' + i + '/' + array.length);
+                console.log(address + ': ' + results[0].geometry.location);
+                array[i].coords.push({
+                  city: array[i].cities[j],
+                  location: results[0].geometry.location
+                });
+                $('#outputJSONArea').val(JSON.stringify(array,null,2));
+                getNextCoord(i,j+1);
+              } else {
+                $('#progress').html('Progress: ' + i + '/' + array.length + ' (Throttled)');
+                console.log('Throttling ' + i + '/' + array.length);
+                setTimeout(function() {
+                  getNextCoord(i,j);
+                }, 15000);
+              }
+            });          
           } else {
-            console.log('Throttling');
-            setTimeout(function() {
-              getNextCoord(i,j);
-            }, 10000);
+            console.log('Coords exist: ' + address);
+            getNextCoord(i,j+1); 
           }
-        });
+        }    
       } else {
         getNextCoord(i+1,0);
       }
     } else {
+      $('#outputJSONArea').val(JSON.stringify(array,null,2));
+      $('#progress').html('Progress: Done.');
       makeSQL();
     }
   };
   var makeSQL = function() {
-    var sql = ['Insert into goodAreacodes(areacode,state,city,long,lat)','Values'];
+    var sql = ['Insert into goodAreacodes(areacode,state,city,lat,long)','Values'];
     for (var i = 0; i < array.length; i++) {
       for (var j = 0; j < array[i].coords.length; j++) {
         sql.push('(\'' + array[i].areacode + '\',\'' + array[i].state + '\',\'' + array[i].coords[j].city.replace('\'','\\\'') + '\',\'' + 
-          array[i].coords[j].location[0] + '\',\'' + 
-          array[i].coords[j].location[1] + '\'),');
+          array[i].coords[j].location.nb + '\',\'' + 
+          array[i].coords[j].location.ob + '\'),');
       }
     }
     var last = sql[sql.length-1];
     last = last.substr(0,last.length-1) + ';';
     sql[sql.length-1] = last;
-    $('#lenJSON').html(' - ' + array.length);
-    $('#outputJSONArea').html(JSON.stringify(array,null,2));
     $('#lenSQL').html(' - ' + sql.length);
     $('#outputSQLArea').html(sql.join('\n'));
   };
+  $('#btnManual').click(function(){
+    geocoder.geocode( { 'address': $('#inputManual').val() }, function(results, status){
+      if (status === google.maps.GeocoderStatus.OK) {
+        $('#outputManual').html(JSON.stringify(results,null,2));
+      } else {
+        $('#outputManual').html(JSON.stringify(status,null,2));
+      }
+    }); 
+  });
   function loadScript() {
     var script = document.createElement('script');
     script.type = 'text/javascript';
