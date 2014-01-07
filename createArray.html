@@ -144,7 +144,7 @@
     }
   };
   var makeSQL = function() {
-    var sql = ['Insert into goodAreacodes(areacode,state,city,lat,long)','Values'];
+    var sql = ['Insert into goodAreacodes(areacode,state,city,lat,lon)','Values'];
     for (var i = 0; i < array.length; i++) {
       for (var j = 0; j < array[i].coords.length; j++) {
         sql.push('(\'' + array[i].areacode + '\',\'' + array[i].state + '\',\'' + array[i].coords[j].city.replace('\'','\\\'') + '\',\'' + 

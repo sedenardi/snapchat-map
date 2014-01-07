@@ -1,8 +1,11 @@
-create temporary table if not exists areacoderank as (
+drop table if exists areacoderank;
+create temporary table areacoderank as (
 select
   areacode,
   state,
   city,
+  lat,
+  lon,
 ( 
   case 
     when @curType = areacode
@@ -15,6 +18,7 @@ from goodareacodes a,
 order by areacode,city
 );
 
+drop table if exists areacodestats;
 create temporary table if not exists areacodestats as (
 select 
   substring(phone,1,3) as areacode,
@@ -27,6 +31,8 @@ select
   r.areacode,
   r.state,
   r.city,
+  r.lat,
+  r.lon,
   s.count
 from areacoderank r
 	inner join areacodestats s
