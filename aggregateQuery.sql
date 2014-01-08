@@ -27,14 +27,22 @@ from records
 group by areacode
 );
 
+drop table if exists jscode;
+create temporary table if not exists jscode as (
 select
   r.areacode,
   r.state,
   r.city,
   r.lat,
   r.lon,
-  s.count
+  s.count,
+  CONCAT('{lat: ',r.lat,', lng: ',r.lon,', count: ',s.count,'}') as json
 from goodareacodes r
 	inner join areacodestats s
 		on s.areacode = r.areacode
-order by s.count desc;
+order by s.count desc
+);
+
+select
+	concat('[',group_concat(json separator ', '),']') as code
+from jscode;
