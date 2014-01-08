@@ -80,9 +80,9 @@
       array = JSON.parse($('#outputJSONArea').val());
       $('#progress').show();
       $('#btnCancel').show();
-      getNextCoord(0,0);
+      getNextCoord(0);
     } catch(e) {
-      alert('JSON is bad');
+      alert('Error: ' + e);
     }
   });
   $('#btnCancel').click(function() {
@@ -95,10 +95,10 @@
     $('#progress').html('Cancelled');
     $('#btnCancel').hide();
   });
-  var getNextCoord = function(i,j) {
+  var getNextCoord = function(i) {
     if (i < array.length) {
-      if (j < array[i].cities.length) {
-        if (array[i].cities[j] === 'None' && !array[i].coords.length) {
+      if (!array[i].coords.length) {        
+        if (array[i].cities[0] === 'None') {
           array[i].coords.push({
             city: 'None',
             location: {
@@ -106,35 +106,32 @@
               ob: 0
             }
           });
-          getNextCoord(i+1,0);
+          getNextCoord(i+1);
         } else {
+          var j = Math.floor((array[i].cities.length)/2);
           var address = array[i].cities[j] + ', ' + array[i].state;
-          if (array[i].coords.length - 1 < j) {
-            geocoder.geocode( { 'address': address }, function(results, status){
-              if (status === google.maps.GeocoderStatus.OK) {
-                $('#progress').html('Progress: ' + (i + 1) + '/' + array.length);
-                console.log(address + ': ' + results[0].geometry.location);
-                array[i].coords.push({
-                  city: array[i].cities[j],
-                  location: results[0].geometry.location
-                });
-                $('#outputJSONArea').val(JSON.stringify(array,null,2));
-                getNextCoord(i,j+1);
-              } else {
-                $('#progress').html('Progress: ' + (i + 1) + '/' + array.length + ' (Throttled)');
-                console.log('Throttling ' + (i + 1) + '/' + array.length);
-                interval = setTimeout(function() {
-                  getNextCoord(i,j);
-                }, 15000);
-              }
-            });          
-          } else {
-            console.log('Coords exist: ' + address);
-            getNextCoord(i,j+1); 
-          }
-        }    
+          console.log((i + 1) + '/' + array.length + ': ' + address);
+          geocoder.geocode( { 'address': address }, function(results, status){
+            if (status === google.maps.GeocoderStatus.OK) {
+              $('#progress').html('Progress: ' + (i + 1) + '/' + array.length);
+              console.log(address + ': ' + results[0].geometry.location);
+              array[i].coords.push({
+                city: array[i].cities[j],
+                location: results[0].geometry.location
+              });
+              $('#outputJSONArea').val(JSON.stringify(array,null,2));
+              getNextCoord(i+1);
+            } else {
+              $('#progress').html('Progress: ' + (i + 1) + '/' + array.length + ' (Throttled)');
+              console.log('Throttling ' + (i + 1) + '/' + array.length);
+              interval = setTimeout(function() {
+                getNextCoord(i);
+              }, 15000);
+            }
+          });
+        }   
       } else {
-        getNextCoord(i+1,0);
+        getNextCoord(i+1);
       }
     } else {
       $('#outputJSONArea').val(JSON.stringify(array,null,2));
@@ -161,7 +158,7 @@
   $('#btnManual').click(function(){
     geocoder.geocode( { 'address': $('#inputManual').val() }, function(results, status){
       if (status === google.maps.GeocoderStatus.OK) {
-        $('#outputManual').html(JSON.stringify(results,null,2));
+        $('#outputManual').html(JSON.stringify(results[0].geometry.location,null,2));
       } else {
         $('#outputManual').html(JSON.stringify(status,null,2));
       }
