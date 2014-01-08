@@ -4,7 +4,9 @@
     geocoder.geocode( { 'address': 'United States of America'}, function(results, status) {
       if (status == google.maps.GeocoderStatus.OK) {
         var myOptions = {
-          zoom: 4,
+          zoom: 3,
+          maxZoom: 6,
+          minZoom: 3,
           center: results[0].geometry.location,
           mapTypeId: google.maps.MapTypeId.ROADMAP,
           disableDefaultUI: false,
@@ -20,16 +22,17 @@
         var heatmap = new HeatmapOverlay(map, {
           "radius":25,
           "visible":true, 
-          "opacity":50
+          "opacity":70
         });
 
         // this is important, because if you set the data set too early, the latlng/pixel projection doesn't work
-        google.maps.event.addListenerOnce(map, "idle", function(){
+        google.maps.event.addListenerOnce(map, "idle", function() {
           heatmap.setDataSet({
             max: 50000,
             data: snapchatCoords
           });
         });
+
       } else {
         alert("Google Maps error: " + status);
       }
