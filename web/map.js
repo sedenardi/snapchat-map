@@ -17,19 +17,30 @@
           scaleControl: true,
           disableDoubleClickZoom: false
         };
-        var map = new google.maps.Map($("#map-canvas")[0], myOptions);
 
-        var heatmap = new HeatmapOverlay(map, {
+        var sMap = new google.maps.Map($("#map-canvas")[0], myOptions);
+        var sHeatmap = new HeatmapOverlay(sMap, {
           "radius":25,
           "visible":true, 
           "opacity":70
         });
-
-        // this is important, because if you set the data set too early, the latlng/pixel projection doesn't work
-        google.maps.event.addListenerOnce(map, "idle", function() {
-          heatmap.setDataSet({
+        google.maps.event.addListenerOnce(sMap, "idle", function() {
+          sHeatmap.setDataSet({
             max: 50000,
             data: snapchatCoords
+          });
+        });
+
+        var uMap = new google.maps.Map($("#map-canvas2")[0], myOptions);
+        var uHeatmap = new HeatmapOverlay(uMap, {
+          "radius":25,
+          "visible":true, 
+          "opacity":70
+        });
+        google.maps.event.addListenerOnce(uMap, "idle", function() {
+          uHeatmap.setDataSet({
+            max: 1500000,
+            data: uspopCoords
           });
         });
 

@@ -1,0 +1,50 @@
+<html>
+  <head>
+    <title>Wikipedia Parser</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body style="padding:20px;">
+    <h3>Parse US City Population Density from - <a href="view-source:http://en.wikipedia.org/wiki/List_of_United_States_cities_by_population" target="_blank">http://en.wikipedia.org/wiki/List_of_United_States_cities_by_population</a></h3>
+    <br />
+    <div>
+      <textarea class="form-control" id="inputArea" placeholder="Paste source from http://en.wikipedia.org/wiki/List_of_United_States_cities_by_population" rows="10"></textarea>
+      <button type="button" class="btn btn-success" id="btnParse">Get Area Codes</button>
+    </div>
+    <br/>
+    <div>
+      <h5>JSON<span id="lenJSON"></span></h5>
+      <textarea class="form-control" id="outputJSONArea" rows="10"></textarea>
+    </div>
+  </body>
+</html>
+</script>
+<script type="text/javascript">
+  $('#btnParse').click(function() {
+    var rawHtml = $('#inputArea').val();
+    var rows = $(rawHtml).find('.wikitable:first').find('tr');
+    var array = [];
+    $.each(rows, function(i,v) {
+      if (i > 0) { //ignore header
+        var rank = $(v).find('td:first').html();
+        var city = $(v).find('td').eq(1).find('a:first').html();
+        var state = $(v).find('td').eq(2).find('a:first').html();
+        
+        $(v).find('td').eq(3).find('span:first').remove();
+        var pop2012 = $(v).find('td').eq(3).html().replace(/,/g , '');
+
+        var latlon = $(v).find('td').eq(9).html().split(' ');
+        var lat = latlon[0].substring(0,(latlon[0].length-2));
+        var lon = '-' + latlon[1].substring(0,(latlon[0].length-2));
+
+        array.push({
+          lat: lat,
+          lng: lon,
+          count: pop2012
+        });
+      }
+    });
+    $('#outputJSONArea').val(JSON.stringify(array));
+  });
+</script>
